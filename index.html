@@ -120,6 +120,151 @@
                 font-size: 1rem;
             }
         }
+        
+        /* ============================================ */
+/* 🖥️ FULLSCREEN BUTTON STYLING */
+/* ============================================ */
+
+.fullscreen-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 255, 255, 0.15);
+    border: 2px solid rgba(0, 255, 255, 0.5);
+    border-radius: 10px;
+    padding: 10px 15px;
+    color: #00ffff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.2);
+}
+
+.fullscreen-btn:hover {
+    background: rgba(0, 255, 255, 0.25);
+    border-color: #00ffff;
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+}
+
+.fullscreen-btn:active {
+    transform: scale(0.95);
+}
+
+.fullscreen-icon {
+    display: block;
+    line-height: 1;
+}
+
+/* Když je v fullscreenu, změň ikonu */
+.fullscreen-active .fullscreen-icon::before {
+    content: '⛶'; /* Standardní ikona */
+}
+
+body:fullscreen .fullscreen-icon::before,
+body:-webkit-full-screen .fullscreen-icon::before,
+body:-moz-full-screen .fullscreen-icon::before {
+    content: '⛶'; /* Ikona pro exit (můžeš změnit na ⤓ nebo ╳) */
+}
+
+/* ============================================ */
+/* 📱 MOBILE RESPONSIVE */
+/* ============================================ */
+
+@media (max-width: 768px) {
+    .fullscreen-btn {
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        font-size: 1.2rem;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .fullscreen-btn {
+        top: 8px;
+        right: 8px;
+        padding: 6px 10px;
+        font-size: 1rem;
+    }
+}
+
+/* ============================================ */
+/* 🖥️ FULLSCREEN MODE ÚPRAVY */
+/* ============================================ */
+
+/* Když je aplikace ve fullscreenu */
+body:fullscreen,
+body:-webkit-full-screen,
+body:-moz-full-screen {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Kontejner v fullscreenu - vycentrovaný */
+body:fullscreen .container,
+body:-webkit-full-screen .container,
+body:-moz-full-screen .container {
+    max-width: 600px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* Zvětši hodiny ve fullscreenu */
+body:fullscreen .time,
+body:-webkit-full-screen .time,
+body:-moz-full-screen .time {
+    font-size: 5rem;
+}
+
+body:fullscreen .date,
+body:-webkit-full-screen .date,
+body:-moz-full-screen .date {
+    font-size: 1.5rem;
+}
+
+body:fullscreen .lesson-name,
+body:-webkit-full-screen .lesson-name,
+body:-moz-full-screen .lesson-name {
+    font-size: 3rem;
+}
+
+/* Mobile fullscreen */
+@media (max-width: 768px) {
+    body:fullscreen .time,
+    body:-webkit-full-screen .time,
+    body:-moz-full-screen .time {
+        font-size: 4rem;
+    }
+    
+    body:fullscreen .lesson-name,
+    body:-webkit-full-screen .lesson-name,
+    body:-moz-full-screen .lesson-name {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body:fullscreen .time,
+    body:-webkit-full-screen .time,
+    body:-moz-full-screen .time {
+        font-size: 3rem;
+    }
+    
+    body:fullscreen .lesson-name,
+    body:-webkit-full-screen .lesson-name,
+    body:-moz-full-screen .lesson-name {
+        font-size: 2rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -139,6 +284,10 @@
     </div>
 
     <div class="performance-mode" id="perfMode">⚡ VARIANTA B</div>
+    <!-- Přidej kam chceš, např. do .header nebo vedle FPS counteru -->
+<button id="fullscreenBtn" class="fullscreen-btn" title="Celá obrazovka">
+    <span class="fullscreen-icon">⛶</span>
+</button>
      <script src="rozvrh-hodin.js"></script>   
     <script>
         // ============================================
@@ -359,6 +508,98 @@
         }
         
         monitorPerformance();
+        
+        
+        
+        // ============================================
+// 🖥️ FULLSCREEN FUNCTIONALITY
+// ============================================
+
+// Element který chceš dát do fullscreenu (celý dokument)
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+// Funkce pro toggle fullscreen
+function toggleFullscreen() {
+    if (!document.fullscreenElement && 
+        !document.webkitFullscreenElement && 
+        !document.mozFullScreenElement) {
+        // Vstup do fullscreenu
+        enterFullscreen();
+    } else {
+        // Výstup z fullscreenu
+        exitFullscreen();
+    }
+}
+
+// Vstup do fullscreenu
+function enterFullscreen() {
+    const elem = document.documentElement; // Celá stránka
+    
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) { // Safari
+        elem.webkitRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+        elem.mozRequestFullScreen();
+    } else if (elem.msRequestFullscreen) { // IE/Edge
+        elem.msRequestFullscreen();
+    }
+}
+
+// Výstup z fullscreenu
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) { // Safari
+        document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) { // IE/Edge
+        document.msExitFullscreen();
+    }
+}
+
+// Event listener na tlačítko
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+}
+
+// Detekce změny fullscreen stavu (pro update ikony)
+document.addEventListener('fullscreenchange', updateFullscreenButton);
+document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+function updateFullscreenButton() {
+    const isFullscreen = !!(document.fullscreenElement || 
+                           document.webkitFullscreenElement || 
+                           document.mozFullScreenElement);
+    
+    if (isFullscreen) {
+        document.body.classList.add('fullscreen-active');
+        fullscreenBtn.title = 'Ukončit celou obrazovku (ESC)';
+    } else {
+        document.body.classList.remove('fullscreen-active');
+        fullscreenBtn.title = 'Celá obrazovka';
+    }
+}
+
+// Klávesová zkratka: F11 nebo F
+document.addEventListener('keydown', (e) => {
+    // F11 (standardní fullscreen)
+    if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+    }
+    // Nebo prostě 'F' jako zkratka
+    if (e.key === 'f' || e.key === 'F') {
+        // Pouze pokud není focused input (kdyby jsi měl formulář)
+        if (document.activeElement.tagName !== 'INPUT' && 
+            document.activeElement.tagName !== 'TEXTAREA') {
+            toggleFullscreen();
+        }
+    }
+});
     </script>
 </body>
 </html>
