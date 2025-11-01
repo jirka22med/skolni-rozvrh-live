@@ -92,9 +92,18 @@ const schedule = [
     //===============================ZAČÁTEK VÍKENDU===============================//
     
     // z PÁTKU NA PONDĚLÍ
-    { day: 5, timeFrom: '12:10', timeTo: '08:00', nextDay: 1, subject: '🎮 Víkend', color: '#1a1a2e' },
+    { day: 5, timeFrom: '12:10', timeTo: '23:59', subject: '🎮 Víkend', color: '#1a1a2e' },
+    
+    // ze SOBOTY NA NEDĚLY
+    // day 31
+    // Sobota
+{ day: 6, timeFrom: '00:00', timeTo: '23:59', subject: '🎮 Sobota', color: '#2d1b69' },
+
+// Neděle
+{ day: 0, timeFrom: '00:00', timeTo: '08:00', nextDay: 1, subject: '🎮 Neděle', color: '#2d1b69' },
 ];
 
 // ============================================
 // KONEC ROZVRHU
+
 // ============================================
