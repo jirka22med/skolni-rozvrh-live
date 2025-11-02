@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Školní Rozvrh - Reálný Čas [VARIANTA B + DEBUG]</title>
+</head>  
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 ŠKOLNÍ ROZVRH 🎓</h1>
+        </div>
+
+        <div class="clock-container">
+            <div class="time" id="time">00:00:00</div>
+            <div class="date" id="date">Načítání...</div>
+        </div>
+
+        <!-- GRID KONTEJNER PRO ROZVRH + COUNTDOWN -->
+        <div class="schedule-grid">
+            <!-- ROZVRH HODIN -->
+            <div class="lesson-box" id="lessonBox">
+                <div class="no-lesson">📅 Žádná hodina</div>
+            </div>
+
+            <!-- ⚡ COUNTDOWN KONTEJNER ⚡ -->
+            <div class="countdown-box" id="countdownBox" style="display: none;">
+                <div class="countdown-header">⏱️ ZBÝVÁ</div>
+                <div class="countdown-time">--</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="countdown-info">
+                    <div class="start-time">📍 Začátek: --:--</div>
+                    <div class="end-time">🏁 Konec: --:--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="performance-mode" id="perfMode">⚡ VARIANTA B + DEBUG</div>
+    
+    <button id="fullscreenBtn" class="fullscreen-btn" title="Celá obrazovka">
+        <span class="fullscreen-icon">⛶</span>
+    </button>
+
+    <!-- ⚡ SKRIPTY - SPRÁVNÉ POŘADÍ! ⚡ -->
+    <script src="debug-module.js"></script>      <!-- 1. DEBUG MODUL -->
+    <script src="rozvrh-hodin.js"></script>      <!-- 2. ROZVRH -->
+    <script src="countdown-module.js"></script>  <!-- 3. COUNTDOWN -->
+    <script src="script.js"></script>            <!-- 4. HLAVNÍ LOGIKA -->
+</body>
+</html>
