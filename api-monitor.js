@@ -1,14 +1,12 @@
 // ============================================
-// 🛰️ API MONITOR MODULE - Vizualní kontrolka
+// 🛰️ API MONITOR MODULE (Left-Top Diagnostic v1.2)
 // ============================================
 // Autor: Adm. Chatbot 🖖 & Více Adm. Jiřík 🚀
-// Účel: Monitorování TimeAPI.io + vizuální indikátor stavu
-// Umístění kontrolky: pravý horní roh
 
 const ApiMonitor = {
     url: "https://timeapi.io/api/Time/current/zone?timeZone=Europe/Prague",
-    checkInterval: 24 * 60 * 60 * 1000, // kontrola 1x denně
-    timeoutMs: 5000, // limit pro odpověď
+    checkInterval: 24 * 60 * 60 * 1000, // 1x denně
+    timeoutMs: 5000,
     indicator: null,
 
     async checkAPI() {
@@ -34,7 +32,7 @@ const ApiMonitor = {
         el.id = "api-indicator";
         el.style.position = "fixed";
         el.style.top = "10px";
-        el.style.left = "10px"; // <<< PŘESUNUTO SEM
+        el.style.left = "10px";
         el.style.padding = "6px 10px";
         el.style.borderRadius = "8px";
         el.style.fontFamily = "Consolas, monospace";
@@ -44,7 +42,8 @@ const ApiMonitor = {
         el.style.border = "1px solid rgba(255, 255, 255, 0.2)";
         el.style.zIndex = "9999";
         el.style.backdropFilter = "blur(5px)";
-        el.textContent = "🛰 Kontrola API...";
+        el.style.transition = "background 0.5s, border-color 0.5s";
+        el.textContent = "🛰 Načítám API status...";
         document.body.appendChild(el);
         this.indicator = el;
     },
@@ -69,8 +68,13 @@ const ApiMonitor = {
 
     start() {
         this.createIndicator();
-        this.checkAPI(); // první test po načtení
-        setInterval(() => this.checkAPI(), this.checkInterval);
+
+        // 🚀 Zpožděný první test (2 sekundy)
+        setTimeout(() => {
+            this.checkAPI();
+            // opakovaná kontrola jednou denně
+            setInterval(() => this.checkAPI(), this.checkInterval);
+        }, 2000);
     }
 };
 
