@@ -4,99 +4,107 @@
 // 🖖 Projekt: Digitální rozvrh s reálným časem
 // 👨‍💻 Autor: Více admirál Jiřík
 // 🤖 AI důstojník: Admirál Claude.AI (Anthropic)
-// 📅 Datum: Říjen 2025
-// ⚡ Verze: VARIANTA B + COUNTDOWN + DEBUG + ATOMIC TIME
-// 🚀 Feature: World Time API + Drift Compensation + Fallback
+// 📅 Datum: Listopad 2025
+// ⚡ Verze: ATOMIC TIME v2 + OPTIMIZED
+// 🚀 Feature: TimeAPI.io + Zero Bottleneck + Retry
 // 
 // "Přesnost je klíč k úspěšné misi!"
 // ============================================
 
 // ============================================
-// ⏰ ATOMIC TIME MODULE - WORLD TIME API
+// ⏰ ATOMIC TIME MODULE v2 - TIMEAPI.IO
 // ============================================
 
 const AtomicTime = {
     apiUrl: 'https://timeapi.io/api/Time/current/zone?timeZone=Europe/Prague',
-    offset: 0,              // Rozdíl mezi API časem a lokálním
-    lastSync: null,         // Poslední synchronizace
-    syncInterval: 1800000,  // Re-sync každých 30 minut
-    useFallback: false,     // Použít fallback (lokální čas)
+    offset: 0,
+    lastSync: null,
+    syncInterval: 1800000,  // 30 minut
+    useFallback: false,
+    retryCount: 0,
+    maxRetries: 3,
     
-    // Inicializace - stáhne čas z API
-    async init() {
-        if (DebugModule && DebugModule.config.enabled) {
-            DebugModule.log('⏰ Inicializace Atomic Time...', 'INFO');
-        }
+    // Rychlá inicializace - non-blocking
+    init() {
+        // Spusť sync na pozadí bez čekání
+        this.sync();
         
-        await this.sync();
-        
-        // Automatická re-synchronizace každých 30 minut
+        // Auto re-sync každých 30 minut
         setInterval(() => this.sync(), this.syncInterval);
+        
+        if (DebugModule && DebugModule.config.enabled) {
+            DebugModule.log('⏰ Atomic Time init - async mode', 'INFO');
+        }
     },
     
-    // Synchronizace s World Time API
+    // Async sync s retry mechanikou
     async sync() {
         try {
-            const response = await fetch(this.apiUrl);
-            if (!response.ok) throw new Error('API request failed');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+            
+            const response = await fetch(this.apiUrl, {
+                signal: controller.signal,
+                cache: 'no-cache'
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) throw new Error('API HTTP error');
             
             const data = await response.json();
+            
+            // TimeAPI.io vrací: { dateTime: "2025-11-06T16:05:43.123456" }
             const apiTime = new Date(data.dateTime);
             const localTime = new Date();
             
-            // Vypočítej offset mezi API a lokálním časem
             this.offset = apiTime.getTime() - localTime.getTime();
             this.lastSync = Date.now();
             this.useFallback = false;
+            this.retryCount = 0;
             
             if (DebugModule && DebugModule.config.enabled) {
-                DebugModule.log(`✅ Atomic Time synced via TimeAPI.io | Offset: ${this.offset}ms`, 'SUCCESS');
-
+                DebugModule.log(`✅ Time synced | Offset: ${this.offset}ms`, 'SUCCESS');
             }
             
             return true;
         } catch (error) {
-            this.useFallback = true;
+            this.retryCount++;
             
-            if (DebugModule && DebugModule.config.enabled) {
-                DebugModule.log('⚠️ API sync failed - using local time', 'WARNING');
+            if (this.retryCount < this.maxRetries) {
+                if (DebugModule && DebugModule.config.enabled) {
+                    DebugModule.log(`⚠️ Sync fail (${this.retryCount}/${this.maxRetries}) - retrying...`, 'WARNING');
+                }
+                
+                // Exponential backoff: 2s, 4s, 8s
+                setTimeout(() => this.sync(), 2000 * Math.pow(2, this.retryCount - 1));
+            } else {
+                this.useFallback = true;
+                
+                if (DebugModule && DebugModule.config.enabled) {
+                    DebugModule.log('❌ API failed - using local time', 'ERROR');
+                }
             }
-            if (!this.useFallback) {
-    try {
-        const response = await fetch(fallbackUrl);
-        const data = await response.json();
-        const apiTime = new Date(data.datetime || data.dateTime);
-        const localTime = new Date();
-        this.offset = apiTime.getTime() - localTime.getTime();
-        this.lastSync = Date.now();
-        this.useFallback = false;
-        DebugModule.log('✅ Fallback API (timeapi.world) úspěšně použito', 'SUCCESS');
-        return true;
-    } catch {}
-}
-
+            
             return false;
         }
     },
     
-    // Získej přesný čas (s offsetem)
+    // Získej přesný čas
     now() {
         if (this.useFallback) {
             return new Date();
         }
-        
-        const localTime = Date.now();
-        const adjustedTime = localTime + this.offset;
-        return new Date(adjustedTime);
+        return new Date(Date.now() + this.offset);
     },
     
-    // Info o stavu synchronizace
     getStatus() {
         return {
             synced: !this.useFallback,
             offset: this.offset,
             lastSync: this.lastSync,
-            timeSinceSync: this.lastSync ? Date.now() - this.lastSync : null
+            timeSinceSync: this.lastSync ? Date.now() - this.lastSync : null,
+            retries: this.retryCount
         };
     }
 };
@@ -119,7 +127,7 @@ if (typeof DebugModule !== 'undefined') {
     });
 
     DebugModule.log('🚀 Aplikace inicializována', 'SUCCESS');
-    DebugModule.log('🎯 Režim: ATOMIC TIME + COUNTDOWN + DEBUG', 'INFO');
+    DebugModule.log('🎯 Režim: ATOMIC TIME v2 OPTIMIZED', 'INFO');
 
     if (typeof schedule !== 'undefined') {
         const validation = DebugModule.schedule.validate(schedule);
@@ -134,32 +142,35 @@ if (typeof DebugModule !== 'undefined') {
 }
 
 // ============================================
-// HLAVNÍ KÓD APLIKACE
+// HLAVNÍ KÓD - OPTIMALIZOVANÝ
 // ============================================
 
 const days = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
 
 // Cache systém
-let cache = {
+const cache = {
     timeString: '',
     dateString: '',
     lessonSubject: null,
     currentDay: -1,
-    currentMinute: -1
+    currentMinute: -1,
+    lastSecond: -1
 };
 
-// DOM elementy
+// DOM elementy - cached při startu
 const elements = {
     time: document.getElementById('time'),
     date: document.getElementById('date'),
-    lessonBox: document.getElementById('lessonBox')
+    lessonBox: document.getElementById('lessonBox'),
+    perfMode: document.getElementById('perfMode'),
+    fullscreenBtn: document.getElementById('fullscreenBtn')
 };
 
 if (DebugModule && DebugModule.config.enabled) {
     DebugModule.log('📦 DOM elementy načteny', 'SUCCESS');
 }
 
-// Předpočítání rozvrhu
+// Předpočítání rozvrhu - OPTIMALIZACE
 const scheduleOptimized = schedule.map(lesson => {
     const [startHour, startMin] = lesson.timeFrom.split(':').map(Number);
     const [endHour, endMin] = lesson.timeTo.split(':').map(Number);
@@ -174,7 +185,7 @@ if (DebugModule && DebugModule.config.enabled) {
     DebugModule.log(`📅 Rozvrh optimalizován (${scheduleOptimized.length} hodin)`, 'SUCCESS');
 }
 
-// Seskupení podle dnů
+// Seskupení podle dnů - OPTIMALIZACE
 const scheduleByDay = {};
 scheduleOptimized.forEach(lesson => {
     if (!scheduleByDay[lesson.day]) {
@@ -184,32 +195,28 @@ scheduleOptimized.forEach(lesson => {
 });
 
 // ============================================
-// ⚡ PŘESNÝ ČASOVÝ UPDATE - BEZ DRIFTU
+// ⚡ PŘESNÝ UPDATE - ZERO BOTTLENECK
 // ============================================
 
 let updateIntervalId = null;
-let lastSecond = -1;
 
-// Optimalizovaná aktualizace času
 function updateTime() {
-    // Použij Atomic Time místo Date()
     const now = AtomicTime.now();
-    
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    
-    const timeString = `${hours}:${minutes}:${seconds}`;
-    
-    // Aktualizuj čas pouze když se změní sekundy
     const currentSecond = now.getSeconds();
-    if (currentSecond !== lastSecond) {
+    
+    // Update času - pouze když se změní sekunda
+    if (currentSecond !== cache.lastSecond) {
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(currentSecond).padStart(2, '0');
+        const timeString = `${hours}:${minutes}:${seconds}`;
+        
         elements.time.textContent = timeString;
         cache.timeString = timeString;
-        lastSecond = currentSecond;
+        cache.lastSecond = currentSecond;
     }
     
-    // Aktualizuj datum pouze když se změní den
+    // Update data - pouze když se změní den
     const currentDay = now.getDay();
     if (currentDay !== cache.currentDay) {
         const dayName = days[currentDay];
@@ -227,42 +234,39 @@ function updateTime() {
         }
     }
     
-    // Aktualizuj hodinu pouze když se změní minuta
+    // Update hodiny - pouze když se změní minuta
     const currentMinute = now.getHours() * 60 + now.getMinutes();
-    if (currentMinute !== cache.currentMinute || cache.lessonSubject === null) {
+    if (currentMinute !== cache.currentMinute) {
         updateCurrentLesson(now, currentDay, currentMinute);
         cache.currentMinute = currentMinute;
     }
 }
 
-// Přesný interval - kompenzuje execution time
+// Přesný interval - kompenzuje drift
 function startPreciseInterval() {
     function tick() {
-        const start = Date.now();
+        const start = performance.now();
         updateTime();
-        const executionTime = Date.now() - start;
+        const executionTime = performance.now() - start;
         
         // Naplánuj další tick přesně na začátek další sekundy
-        const delay = 1000 - (Date.now() % 1000) - executionTime;
-        updateIntervalId = setTimeout(tick, Math.max(0, delay));
+        const now = Date.now();
+        const delay = 1000 - (now % 1000);
+        const adjustedDelay = Math.max(0, delay - executionTime);
+        
+        updateIntervalId = setTimeout(tick, adjustedDelay);
     }
     
     tick();
 }
 
-// Debounced DOM update pro hodinu
-let lessonUpdateTimeout = null;
-
+// Update hodiny - OPTIMALIZOVÁNO
 function updateCurrentLesson(now, currentDay, currentTime) {
     const todayLessons = scheduleByDay[currentDay] || [];
-    
     let currentLesson = null;
     
-    // 1) Hledání běžných hodin v aktuálním dni
-    for (let i = 0; i < todayLessons.length; i++) {
-        const lesson = todayLessons[i];
-        
-        // CROSS-DAY LOGIKA
+    // Rychlé hledání - break při prvním match
+    for (const lesson of todayLessons) {
         if (lesson.nextDay) {
             if (currentDay === lesson.day && currentTime >= lesson.startMinutes) {
                 currentLesson = lesson;
@@ -272,7 +276,6 @@ function updateCurrentLesson(now, currentDay, currentTime) {
                 break;
             }
         } else {
-            // Normální hodina
             if (currentTime >= lesson.startMinutes && currentTime < lesson.endMinutes) {
                 currentLesson = lesson;
                 break;
@@ -280,14 +283,12 @@ function updateCurrentLesson(now, currentDay, currentTime) {
         }
     }
     
-    // 2) Pokud jsme nic nenašli, zkontroluj předchozí den (cross-day)
+    // Check předchozí den (cross-day)
     if (!currentLesson) {
         const previousDay = currentDay === 0 ? 6 : currentDay - 1;
         const yesterdayLessons = scheduleByDay[previousDay] || [];
         
-        for (let i = 0; i < yesterdayLessons.length; i++) {
-            const lesson = yesterdayLessons[i];
-            
+        for (const lesson of yesterdayLessons) {
             if (lesson.nextDay === currentDay && currentTime < lesson.endMinutes) {
                 currentLesson = lesson;
                 break;
@@ -297,34 +298,27 @@ function updateCurrentLesson(now, currentDay, currentTime) {
     
     const newLessonSubject = currentLesson ? currentLesson.subject : null;
     
-    // Překresli pouze když se hodina změnila
+    // Update pouze když se změní hodina
     if (newLessonSubject !== cache.lessonSubject) {
-        clearTimeout(lessonUpdateTimeout);
-        lessonUpdateTimeout = setTimeout(() => {
-            updateLessonDisplay(currentLesson);
-            updateCountdown(currentLesson, currentTime, currentDay);
-            
-            if (DebugModule && DebugModule.config.enabled) {
-                if (currentLesson) {
-                    DebugModule.log(`📚 Hodina změněna: ${currentLesson.subject} (${currentLesson.timeFrom}-${currentLesson.timeTo})`, 'SCHEDULE');
-                    
-                    const validation = DebugModule.countdown.validate(currentLesson, currentTime, currentDay);
-                    if (!validation.valid) {
-                        DebugModule.log('❌ Countdown validace selhala!', 'ERROR');
-                    }
-                } else {
-                    DebugModule.log('📅 Žádná hodina', 'SCHEDULE');
-                }
+        updateLessonDisplay(currentLesson);
+        updateCountdown(currentLesson, currentTime, currentDay);
+        
+        if (DebugModule && DebugModule.config.enabled) {
+            if (currentLesson) {
+                DebugModule.log(`📚 Hodina: ${currentLesson.subject} (${currentLesson.timeFrom}-${currentLesson.timeTo})`, 'SCHEDULE');
+            } else {
+                DebugModule.log('📅 Žádná hodina', 'SCHEDULE');
             }
-            
-            cache.lessonSubject = newLessonSubject;
-        }, 50);
-    } else {
+        }
+        
+        cache.lessonSubject = newLessonSubject;
+    } else if (currentLesson) {
+        // Aktualizuj countdown i když se hodina nezmění
         updateCountdown(currentLesson, currentTime, currentDay);
     }
 }
 
-// Separovaná funkce pro aktualizaci displeje
+// Display update - OPTIMALIZOVÁNO
 function updateLessonDisplay(lesson) {
     const box = elements.lessonBox;
     
@@ -348,21 +342,20 @@ function updateLessonDisplay(lesson) {
     }
 }
 
-// ⚡ NOVÁ FUNKCE - AKTUALIZACE COUNTDOWN ⚡
+// Countdown update
 function updateCountdown(lesson, currentMinutes, currentDay) {
     if (typeof CountdownModule !== 'undefined') {
         CountdownModule.update(lesson, currentMinutes, currentDay);
     }
 }
 
-// Detekce viditelnosti stránky
+// Visibility change handler
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         if (updateIntervalId) {
             clearTimeout(updateIntervalId);
             updateIntervalId = null;
         }
-
         if (DebugModule && DebugModule.config.enabled) {
             DebugModule.log('😴 Stránka skryta - timer pozastaven', 'INFO');
         }
@@ -371,20 +364,17 @@ document.addEventListener('visibilitychange', () => {
             startPreciseInterval();
         }
         cache.currentMinute = -1;
-
         if (DebugModule && DebugModule.config.enabled) {
             DebugModule.log('👁️ Stránka aktivní - timer obnoven', 'INFO');
         }
     }
 });
 
-// Cleanup při zavření stránky
+// Cleanup
 window.addEventListener('beforeunload', () => {
     if (updateIntervalId) {
         clearTimeout(updateIntervalId);
     }
-    clearTimeout(lessonUpdateTimeout);
-
     if (DebugModule && DebugModule.config.enabled) {
         DebugModule.log('👋 Aplikace ukončena', 'INFO');
         DebugModule.printStats();
@@ -392,66 +382,60 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ============================================
-// 🚀 INICIALIZACE - ASYNC START
+// 🚀 INICIALIZACE - NON-BLOCKING
 // ============================================
 
-async function init() {
-    // 1) Inicializuj Atomic Time
-    await AtomicTime.init();
+function init() {
+    // 1) Spusť Atomic Time sync na pozadí (non-blocking)
+    AtomicTime.init();
     
-    // 2) Spusť časový update
+    // 2) Okamžitě spusť UI update (neblokuje se na API)
     updateTime();
     startPreciseInterval();
     
     if (DebugModule && DebugModule.config.enabled) {
-        DebugModule.log('✅ Aplikace spuštěna s Atomic Time', 'SUCCESS');
-        
-        // Info o sync stavu
-        const status = AtomicTime.getStatus();
-        if (status.synced) {
-            DebugModule.log(`⏰ Time synced | Offset: ${status.offset}ms`, 'SUCCESS');
-        } else {
-            DebugModule.log('⚠️ Using fallback local time', 'WARNING');
-        }
+        DebugModule.log('✅ Aplikace spuštěna - OPTIMIZED MODE', 'SUCCESS');
     }
 }
 
-// Spuštění aplikace
+// Okamžitý start
 init();
 
-// Performance monitoring
+// ============================================
+// 📊 PERFORMANCE MONITORING
+// ============================================
+
 let frameCount = 0;
 let lastFpsUpdate = Date.now();
 
 function monitorPerformance() {
     frameCount++;
     const now = Date.now();
+    
     if (now - lastFpsUpdate > 5000) {
         const fps = Math.round((frameCount / 5) * 10) / 10;
-        
         const status = AtomicTime.getStatus();
         const syncStatus = status.synced ? '✅ SYNCED' : '⚠️ LOCAL';
         
-        document.getElementById('perfMode').textContent = `⚡ ATOMIC TIME ${syncStatus} | ${fps} FPS`;
+        if (elements.perfMode) {
+            elements.perfMode.textContent = `⚡ ATOMIC v2 ${syncStatus} | ${fps} FPS`;
+        }
         
         frameCount = 0;
         lastFpsUpdate = now;
     }
+    
     requestAnimationFrame(monitorPerformance);
 }
 
 monitorPerformance();
 
 // ============================================
-// 🖥️ FULLSCREEN FUNCTIONALITY
+// 🖥️ FULLSCREEN
 // ============================================
 
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-
 function toggleFullscreen() {
-    if (!document.fullscreenElement && 
-        !document.webkitFullscreenElement && 
-        !document.mozFullScreenElement) {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement) {
         enterFullscreen();
     } else {
         exitFullscreen();
@@ -460,40 +444,29 @@ function toggleFullscreen() {
 
 function enterFullscreen() {
     const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+    else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
     
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-    } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-    }
-
     if (DebugModule && DebugModule.config.enabled) {
         DebugModule.log('🖥️ Fullscreen aktivován', 'INFO');
     }
 }
 
 function exitFullscreen() {
-    if (document.exitFullscreen) {
-        document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-    }
-
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+    else if (document.msExitFullscreen) document.msExitFullscreen();
+    
     if (DebugModule && DebugModule.config.enabled) {
         DebugModule.log('🖥️ Fullscreen ukončen', 'INFO');
     }
 }
 
-if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', toggleFullscreen);
+if (elements.fullscreenBtn) {
+    elements.fullscreenBtn.addEventListener('click', toggleFullscreen);
 }
 
 document.addEventListener('fullscreenchange', updateFullscreenButton);
@@ -502,16 +475,14 @@ document.addEventListener('mozfullscreenchange', updateFullscreenButton);
 document.addEventListener('MSFullscreenChange', updateFullscreenButton);
 
 function updateFullscreenButton() {
-    const isFullscreen = !!(document.fullscreenElement || 
-                           document.webkitFullscreenElement || 
-                           document.mozFullScreenElement);
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
     
     if (isFullscreen) {
         document.body.classList.add('fullscreen-active');
-        fullscreenBtn.title = 'Ukončit celou obrazovku (ESC)';
+        if (elements.fullscreenBtn) elements.fullscreenBtn.title = 'Ukončit celou obrazovku (ESC)';
     } else {
         document.body.classList.remove('fullscreen-active');
-        fullscreenBtn.title = 'Celá obrazovka';
+        if (elements.fullscreenBtn) elements.fullscreenBtn.title = 'Celá obrazovka';
     }
 }
 
@@ -521,27 +492,26 @@ document.addEventListener('keydown', (e) => {
         toggleFullscreen();
     }
     if (e.key === 'f' || e.key === 'F') {
-        if (document.activeElement.tagName !== 'INPUT' && 
-            document.activeElement.tagName !== 'TEXTAREA') {
+        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
             toggleFullscreen();
         }
     }
 });
 
 // ============================================
-// 🛠 DEBUG - TISK STATISTIK PO 60 SEKUNDÁCH
+// 🛠 DEBUG STATS
 // ============================================
 if (DebugModule && DebugModule.config.enabled) {
     setTimeout(() => {
         DebugModule.printStats();
         
-        // Přidej info o Atomic Time
         const status = AtomicTime.getStatus();
         console.log('⏰ ATOMIC TIME STATUS:', {
             synced: status.synced,
             offset: status.offset + 'ms',
             lastSync: status.lastSync ? new Date(status.lastSync).toLocaleTimeString() : 'Never',
-            timeSinceSync: status.timeSinceSync ? Math.round(status.timeSinceSync / 1000) + 's' : 'N/A'
+            timeSinceSync: status.timeSinceSync ? Math.round(status.timeSinceSync / 1000) + 's' : 'N/A',
+            retries: status.retries
         });
     }, 60000);
 }
