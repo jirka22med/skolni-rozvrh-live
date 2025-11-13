@@ -114,7 +114,7 @@ const AtomicTime = {
 // ============================================
 if (typeof DebugModule !== 'undefined') {
     DebugModule.init({
-        enabled: true,
+        enabled: false,
         showPanel: false,
         maxLogs: 1000,
         fpsMonitoring: true,
