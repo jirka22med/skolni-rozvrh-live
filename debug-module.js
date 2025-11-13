@@ -571,8 +571,8 @@ createDebugButton: function() {
         position: fixed;
         top: 20px;
         right: 80px;
-        width: 50px;
-        height: 50px;
+        width: 10px;
+        height: 10px;
         background: rgba(0, 255, 0, 0.15);
         border: 2px solid rgba(0, 255, 0, 0.5);
         border-radius: 12px;
@@ -640,8 +640,8 @@ createDebugButton: function() {
             #debug-btn {
                 top: 10px !important;
                 right: 60px !important;
-                width: 45px !important;
-                height: 45px !important;
+                width: 5px !important;
+                height: 5px !important;
                 font-size: 0.5rem !important;
                 line-height: 44px !important;
             }
@@ -804,3 +804,4 @@ if (typeof window !== 'undefined') {
 // KONEC DEBUG MODULU
 
 // ============================================
+
