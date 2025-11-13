@@ -16,7 +16,7 @@ const DebugModule = {
     // ⚙️ KONFIGURACE
     // ============================================
     config: {
-        enabled: true,              // Zapnout/vypnout debug
+        enabled: false,              // Zapnout/vypnout debug
         showPanel: false,           // Zobrazit panel (klávesa D nebo tlačítko)
         maxLogs: 1000,             // Max počet logů v historii
         fpsMonitoring: true,       // Sledovat FPS
@@ -564,7 +564,7 @@ createDebugButton: function() {
     const button = document.createElement('div');
     button.id = 'debug-btn';
     button.title = 'Debug Panel (D)';
-    button.innerHTML = '🐛';
+    button.innerHTML = 'D';
 
     // 💅 Styl tlačítka
     button.style.cssText = `
@@ -642,7 +642,7 @@ createDebugButton: function() {
                 right: 60px !important;
                 width: 45px !important;
                 height: 45px !important;
-                font-size: 1.4rem !important;
+                font-size: 0.5rem !important;
                 line-height: 44px !important;
             }
             #debug-panel {
@@ -802,4 +802,5 @@ if (typeof window !== 'undefined') {
 
 // ============================================
 // KONEC DEBUG MODULU
+
 // ============================================
