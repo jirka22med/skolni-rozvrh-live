@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- =============================== -->
+    <!-- 📱 PWA META TAGY                -->
+    <!-- =============================== -->
+    <meta name="theme-color" content="#00ffff">
+    <meta name="description" content="Digitální školní rozvrh s real-time hodinami a odpočtem hodiny.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rozvrh">
+    <meta name="msapplication-TileColor" content="#0f0c29">
+    <meta name="msapplication-TileImage" content="icons/icon-144.png">
+
+    <!-- =============================== -->
+    <!-- 🔗 PWA MANIFEST & IKONY         -->
+    <!-- =============================== -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icons/icon-152.png">
+    <link rel="apple-touch-icon" sizes="72x72"  href="icons/icon-72.png">
+    <link rel="apple-touch-icon" sizes="96x96"  href="icons/icon-96.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-72.png">
+
+    <!-- =============================== -->
+    <!-- 🎨 STYLY                        -->
+    <!-- =============================== -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="countdown.css">
+
+    <title>Školní Rozvrh – Reálný čas 🎓</title>
+</head>  
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ŠKOLNÍ ROZVRH</h1>
+        </div>
+
+        <div class="clock-container">
+            <div class="time" id="time">00:00:00</div>
+            <div class="date" id="date">Načítání...</div>
+        </div>
+
+        <!-- GRID KONTEJNER PRO ROZVRH + COUNTDOWN -->
+        <div class="schedule-grid">
+            <!-- ROZVRH HODIN -->
+            <div class="lesson-box" id="lessonBox">
+                <div class="no-lesson">📅 Žádná hodina</div>
+            </div>
+
+            <!-- ⚡ COUNTDOWN KONTEJNER ⚡ -->
+            <div class="countdown-box" id="countdownBox" style="display: none;">
+                <div class="countdown-header">⏱️ ZBÝVÁ</div>
+                <div class="countdown-time">--</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="countdown-info">
+                    <div class="start-time">📍 Začátek: --:--</div>
+                    <div class="end-time">🏁 Konec: --:--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="performance-mode" id="perfMode">⚡ VARIANTA B + DEBUG + PWA</div>
+    
+    <button id="fullscreenBtn" class="fullscreen-btn" title="Celá obrazovka">
+        <span class="fullscreen-icon">⛶</span>
+    </button>
+
+    <!-- =============================== -->
+    <!-- ⚡ SKRIPTY - SPRÁVNÉ POŘADÍ!    -->
+    <!-- =============================== -->
+    <script src="debug-module.js"></script>         <!-- 1. DEBUG MODUL      -->
+    <script src="rozvrh-hodin.js"></script>         <!-- 2. ROZVRH           -->
+    <script src="countdown-module.js"></script>     <!-- 3. COUNTDOWN        -->
+    <script src="script.js"></script>               <!-- 4. HLAVNÍ LOGIKA    -->
+    <!-- <script src="api-monitor.js"></script> --> <!-- 5. HLÍDAČ API KLÍČE -->
+    <script src="boot-timeline.js"></script>        <!-- 6. BOOT TIMELINE    -->
+    <script src="pwa-module.js"></script>           <!-- 7. PWA MODULE 📱    -->
+</body>
+</html>
